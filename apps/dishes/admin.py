@@ -6,6 +6,7 @@ from apps.dishes.models import (
 )
 
 admin.site.register(UserRation)
+admin.site.register(Item)
 
 
 class ItemInline(admin.TabularInline):

@@ -1,4 +1,4 @@
-from django.db.models import Func, F
+from django.db.models import Sum
 from rest_framework import viewsets
 
 from apps.dishes.api.serializers import RationDishSerializer
@@ -12,12 +12,16 @@ class RationDishViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         calories = self.request.query_params.get('calories', None)
 
-        if calories is not None:
-            nearest_dish_by_calories = self.queryset.annotate(
-                abs_diff=Func(F('items__calories') - calories, function='ABS')
-            ).order_by('abs_diff')[:1]
+        if calories and calories.isdigit() and not calories == '':
+            dishes_calories = RationDish.objects.annotate(
+                total_calories=Sum('items__calories')
+            ).values('pk', 'total_calories')
 
-            return nearest_dish_by_calories
+            closest_dish_by_calories = min(
+                dishes_calories, key=lambda x: abs(x['total_calories'] - int(calories))
+            )
+
+            return RationDish.objects.filter(pk=closest_dish_by_calories['pk'])
 
         return self.queryset
 
